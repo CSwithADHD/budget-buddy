@@ -155,3 +155,6 @@ overrides:
   esbuild: "0.27.3"
   "@types/react": "19.1.17"
   "@types/react-dom": "19.1.7"
+
+allowBuilds:
+  esbuild: set this to true or false
