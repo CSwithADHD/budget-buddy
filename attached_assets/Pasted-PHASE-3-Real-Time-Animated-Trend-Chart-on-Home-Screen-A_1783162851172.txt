@@ -1,0 +1,57 @@
+PHASE 3: Real-Time Animated Trend Chart on Home Screen
+
+Add a smooth filled line/area chart to the home screen (like a "yearly summary" balance trend chart) that reacts in real time as transactions are added or removed, with a time-range toggle.
+
+Chart style (reference: smooth area chart, not a bar chart):
+
+
+Smooth curved line (not sharp/jagged segments) with a soft gradient fill beneath it, fading from the line color down to transparent.
+Use the app's accent/positive color token for the line and fill.
+Horizontal gridlines at 2-3 evenly spaced value intervals, labeled on the Y-axis (e.g. $0, $50K, $100K — scale to whatever the actual data range is).
+X-axis shows time labels appropriate to the selected range (see toggle below).
+A small legend/label at the top identifying what's plotted (e.g. "Balance" or the selected category name), consistent with the existing card/header style.
+
+
+Time-range toggle:
+
+
+Add a segmented control or tab toggle above or below the chart with three options: Week / Month / Year.
+Switching the toggle re-renders the chart with data grouped for that range:
+
+Week → daily data points for the current week
+Month → data points across the current month (e.g. weekly or daily depending on how much data exists)
+Year → monthly data points across the current year, matching the reference image's style
+
+
+
+This should also work per-category if opened from within a specific category (tie into the Categories tab from Phase 2) — tell me if the current data model supports filtering transactions by category and date range, or if that needs to be added first.
+
+
+Real-time behavior:
+
+
+When a transaction is added or removed, the chart should update and animate to reflect the new data point smoothly rather than snapping instantly — animate the line/fill transition (200-400ms ease).
+Chart data must be driven from real transaction/category state, not mocked values.
+
+
+Insufficient data / time-not-passed state:
+
+
+If the selected range doesn't have enough elapsed time to show meaningful data (e.g. user selects "Year" but the app has only been used for 3 days, or selects "Week" on day one of use), do NOT render an empty or broken-looking chart.
+Instead show a clear, friendly message in place of the chart explaining why — for example: "Not enough data yet — check back once a week has passed" (adjust wording per range: week/month/year). Keep this message styled consistently with the app's other empty states.
+Once enough time/data exists, the message should automatically be replaced by the real chart — no manual refresh needed.
+
+
+Before you build: tell me which charting library or approach you plan to use given what's already in the project (e.g. react-native-svg + a charting library like Victory Native or react-native-gifted-charts, or a custom SVG path), so I can confirm before you add new dependencies.
+
+When done: show me a description or recording of: (1) the Year view matching the smooth area-chart look, (2) switching between Week/Month/Year, (3) adding a transaction and watching it animate, and (4) the insufficient-data message appearing correctly for a fresh/new dataset.
+
+
+PHASE 4: Verify Everything Together
+
+
+Add a transaction → confirm the chart animates to reflect it, and the Categories tab shows the updated spent amount.
+Delete that transaction → confirm the chart animates back down and the Categories tab updates.
+Switch between Week / Month / Year → confirm each renders correctly, or shows the insufficient-data message where appropriate.
+Reset app data → confirm the chart, home screen totals, and Categories tab all return to a clean empty state (with the insufficient-data message showing, not a broken empty chart).
+Report back with a pass/fail on each of the four checks above.

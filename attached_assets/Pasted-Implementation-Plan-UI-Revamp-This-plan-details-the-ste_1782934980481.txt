@@ -1,0 +1,74 @@
+Implementation Plan - UI Revamp
+This plan details the steps required to redesign the Household Budget Tracker app to match the premium, modern aesthetic in the provided design mockup images.
+
+We will introduce a purple-accented layout, structured category-specific budgets, a dedicated onboarding/setup flow, and a detailed spending insight dashboard.
+
+User Review Required
+NOTE
+
+We will upgrade the single global budget limit to a category-based budgeting system where users allocate parts of their budget to categories (General, Transportation, Charity, etc.) and can create custom categories.
+
+Proposed Theme Palette:
+
+Primary Purple Accent: #7F56D9 / #6E44FF
+Dark Card (Dashboard): #1A1A1E / #222226
+Light Purple Banner: #F4F3FF
+Page Background: #F8FAFC
+Open Questions
+Do we have custom icons/avatars to render, or should we use standard vector icons (@expo/vector-icons like Feather/MaterialIcons) and emoji icons for user-created categories?
+Would you like the transactions list to support mock items (like "Fitness first" with its red logo, "Transfer wise" with its green logo) dynamically, or map to user-entered expenses under their chosen category?
+Proposed Changes
+Step 1: Data Types & State Upgrades
+[MODIFY] 
+types/index.ts
+Add BudgetCategory type with: id, name, icon (emoji or glyph), color, and allocated budget.
+Add categories array and balance to BudgetData.
+[MODIFY] 
+context/BudgetContext.tsx
+Define default categories (General, Transportation, Charity) inside EMPTY state.
+Add context actions:
+updateCategories(categories: BudgetCategory[])
+addCategory(category: BudgetCategory)
+Step 2: Onboarding & Create Budget Setup Flow
+[MODIFY] 
+app/onboarding.tsx
+Rewrite to implement a premium 3-step setup flow:
+Enter Name Screen: Input field to personalise the greeting ("Good Morning, Parzival").
+Create Budget Screen (Mockup Screen 2 & 3):
+Total budget setup input (showing $6,000 or Rs. format).
+Row of quick select amounts ($100, $200, $500, $1,000).
+Category budget allocation list showing allocated amounts and an Add New Category row.
+Create Category Modal (Mockup Screen 3): Choose icon, category name, select color dot, quick labels ("Self care", "Education", "Shopping", "Lifestyle"), and a purple Save category button.
+"Amount left" indicator showing remaining unallocated budget.
+Success Screen (Mockup Screen 4):
+Large green check circle, descriptive text, summary card of category budgets with total budgeted, and a purple View my dashboard button.
+Step 3: Dashboard Redesign
+[MODIFY] 
+app/(tabs)/index.tsx
+Redesign page header:
+Circular avatar (left) with text "Good Morning, [Name]" and subtitle "Have a good day!".
+Notification bell icon on the right with a red dot notification indicator.
+Redesign Balance Card:
+Deep charcoal container (#1C1C1E) with rounded corners.
+"Total balance" label with an eye-slash visibility toggle icon.
+Large balance text (e.g., $18,987.67 USD).
+Row of three dark circular icons with text labels:
+Deposit (+)
+Transfer (↗)
+More (9-dots grid)
+Add financial budget card banner:
+Lavender card (#F3F0FF) prompting users to configure or track budgets.
+Includes a cartoon illustration/vector and a purple button "Set up now" / "Adjust budget".
+Redesign Transactions section:
+"Transactions" section title with a purple "view all >" text link.
+Custom list of transactions showing brand-like icons (Fitness first red icon, Wise green icon, etc.) or fallback styled category circles.
+[MODIFY] 
+app/(tabs)/_layout.tsx
+Style bottom tab bar to use a sleek white background, purple active tint, and custom design icons matching the tabs: Home, Cards, Rewards, Profile.
+Step 4: Spending Insight Screen
+[NEW] 
+app/spending-insight.tsx
+Create a dedicated screen matching Mockup Screen 5:
+Header: Back button, Title "Spending insight", Month dropdown selector (e.g., "Jan").
+Budget overview card with a clean semi-circular progress widget showing amount spent and "Left to spend".
+Budget category breakdown list showing actual spending over allocated budget ($600 / $3,000), number of transactions, and progress meters.

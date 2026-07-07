@@ -1,0 +1,478 @@
+# Household Budget Tracker — React Native (Expo) Replit Prompt
+
+## PROJECT SETUP
+
+Create a **React Native app using Expo (Expo Go compatible)**.
+
+Scaffold with:
+```
+npx create-expo-app HouseholdBudget --template blank
+```
+
+Use **Expo Router** for navigation if available, otherwise use **React Navigation Bottom Tabs**.
+
+### Dependencies to install:
+```bash
+npx expo install @react-navigation/native @react-navigation/bottom-tabs
+npx expo install react-native-screens react-native-safe-area-context
+npx expo install @react-native-async-storage/async-storage
+npx expo install expo-notifications
+npx expo install expo-file-system expo-sharing
+```
+
+For Excel export:
+```bash
+npm install xlsx
+```
+
+---
+
+## FILE STRUCTURE
+
+```
+/app (or /src)
+  /screens
+    DashboardScreen.js
+    AddExpenseScreen.js
+    StatementScreen.js
+    RemindersScreen.js
+  /components
+    BalanceCard.js
+    TransactionRow.js
+    ReminderCard.js
+    SuccessToast.js
+  /utils
+    storage.js       ← AsyncStorage helpers
+    calculations.js  ← all derived values
+    exportExcel.js   ← SheetJS Excel export
+  App.js             ← navigation setup
+```
+
+---
+
+## DESIGN SYSTEM
+
+```
+Primary Font:    Use expo-font with "Nunito" OR fallback to System font with fontWeight
+Background:      #F8FAFC
+Card Background: #FFFFFF, borderRadius: 20, shadow elevation: 4
+Accent Green:    #16A34A
+Accent Red:      #DC2626
+Text Primary:    #111827
+Text Muted:      #6B7280
+Bottom Tab Bar:  white background, shadow on top
+Safe Area:       Always use SafeAreaView from react-native-safe-area-context
+```
+
+**Design tone:** Premium banking app. Think Meezan Bank or HDFC mobile app — clean, spacious, readable. Large text. No clutter. Everything centered around the balance card.
+
+---
+
+## NAVIGATION (App.js)
+
+Use `createBottomTabNavigator` with 4 tabs:
+
+```js
+Tab 1: Home        → DashboardScreen    icon: house emoji or Ionicons "home"
+Tab 2: Add         → AddExpenseScreen   icon: plus-circle
+Tab 3: Statement   → StatementScreen    icon: document-text
+Tab 4: Reminders   → RemindersScreen    icon: notifications
+```
+
+Active tab color: `#16A34A`
+Inactive tab color: `#9CA3AF`
+
+---
+
+## DATA MODEL (AsyncStorage key: `"budgetData"`)
+
+```json
+{
+  "budget": 50000,
+  "savingsGoal": 20000,
+  "month": "2026-06",
+  "expenses": [
+    {
+      "id": "abc123",
+      "amount": 450,
+      "category": "Groceries",
+      "description": "Vegetables",
+      "date": "2026-06-12"
+    }
+  ],
+  "reminders": [
+    {
+      "id": "xyz789",
+      "title": "Car Oil Change",
+      "date": "2026-07-15",
+      "repeatType": "yearly"
+    }
+  ]
+}
+```
+
+**Month isolation:** Filter expenses where `expense.date.startsWith(currentMonth)` where `currentMonth = new Date().toISOString().slice(0,7)` (e.g. `"2026-06"`).
+
+---
+
+## STORAGE UTILS (`/utils/storage.js`)
+
+```js
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export const getData = async () => { ... }
+export const saveData = async (data) => { ... }
+export const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2)
+```
+
+---
+
+## CALCULATIONS (`/utils/calculations.js`)
+
+```js
+export const getTotalSpent = (expenses, month) =>
+  expenses
+    .filter(e => e.date.startsWith(month))
+    .reduce((sum, e) => sum + e.amount, 0);
+
+export const getRemainingBalance = (budget, totalSpent) => budget - totalSpent;
+
+export const getSavingsProgress = (remainingBalance, savingsGoal) =>
+  savingsGoal > 0 ? Math.min((remainingBalance / savingsGoal) * 100, 100) : 0;
+```
+
+---
+
+## SCREEN 1 — DASHBOARD (`DashboardScreen.js`)
+
+Use `useFocusEffect` from React Navigation to re-fetch data every time this screen is visited.
+
+### Layout (ScrollView, vertical):
+
+**Header Row** (`flexDirection: row`, `justifyContent: space-between`)
+- Left: "Household Budget" bold 20px
+- Right: "June 2026" muted 14px (auto from `new Date()`)
+
+---
+
+**Balance Card** (most important component)
+- Full width, `borderRadius: 24`
+- Background: LinearGradient `#16A34A → #15803D` (use `expo-linear-gradient`)
+- White text only
+
+```
+REMAINING BALANCE       ← 13px uppercase tracking
+Rs. 37,500              ← 44px bold white
+━━━━━━━━━━━━━━━━━
+Budget:   Rs. 50,000    ← 15px, side by side
+Spent:    Rs. 12,500
+```
+
+---
+
+**Budget Setup** (conditional — show if budget === 0)
+- TextInput for budget + green "Set Budget" button
+- TextInput for savings goal + "Set Goal" button
+- If budget already set, show small "Edit Budget" text link below balance card
+
+---
+
+**Savings Goal Card** (white card)
+```
+Savings Goal: Rs. 20,000
+[████████░░] 75%         ← View with green fill, animated width
+Rs. 15,000 saved so far
+```
+
+Use `Animated.Value` to animate progress bar width on mount.
+
+---
+
+**"+ Add Expense" Button**
+- `width: '100%'`, `height: 56`, `borderRadius: 16`
+- Background: `#16A34A`, white bold text "＋ Add Expense"
+- `onPress`: navigate to AddExpense tab
+
+---
+
+**Recent Transactions** (last 5, reverse chronological)
+- Section title: "Recent Transactions" bold
+- FlatList or `.slice(-5).reverse().map()`
+
+Each row (`TransactionRow` component):
+```
+[Icon]  Groceries          -Rs. 450
+        Vegetables          12 Jun
+```
+- Category: bold 15px `#111827`
+- Description: 13px `#6B7280`
+- Amount: bold 15px `#DC2626` right-aligned
+- Date: 12px `#9CA3AF` right-aligned
+- Swipeable row OR long-press for delete (Alert.alert confirm)
+
+---
+
+**First Load:** If AsyncStorage is empty, pre-populate with:
+- Budget: 50,000
+- Savings Goal: 20,000
+- 3 sample expenses (Groceries, Transport, Utilities)
+- 2 sample reminders
+
+So the app never opens to a blank screen.
+
+---
+
+## SCREEN 2 — ADD EXPENSE (`AddExpenseScreen.js`)
+
+KeyboardAvoidingView wrapping a ScrollView.
+
+**Header:** "Add Expense" bold centered
+
+**Form Fields (each 52px height input):**
+
+1. **Amount** — `keyboardType="numeric"`, placeholder "Rs. 0", large 24px font inside input
+2. **Category** — use a custom styled Picker or a row of tappable chip buttons:
+   ```
+   [🛒 Groceries] [💡 Utilities] [🚗 Transport]
+   [🏥 Medical]   [📚 Education] [🛍️ Shopping] [📌 Other]
+   ```
+   Selected chip: green background white text. Others: gray border.
+3. **Description** — TextInput, optional, placeholder "What was this for?"
+4. **Date** — use `@react-native-community/datetimepicker` OR show formatted date with a simple tap-to-change using `DateTimePickerModal` from `react-native-modal-datetime-picker`. Default = today.
+
+**"Save Expense" Button** — full width, green, 56px
+
+**Validation:**
+- If amount is empty or 0: shake the input (Animated), show inline red text "Please enter an amount"
+
+**After Save:**
+- Show `SuccessToast` component: slides up from bottom, stays 2.5s, then dismisses
+- Toast text: `✅ Expense Saved! Balance: Rs. 37,500`
+- Navigate to Dashboard tab after toast dismisses
+
+---
+
+## SCREEN 3 — STATEMENT (`StatementScreen.js`)
+
+SectionList grouped by date descending.
+
+**Header card:**
+```
+Statement — June 2026
+Opening Balance: Rs. 50,000
+```
+
+**SectionList sections:**
+```js
+sections = [
+  { title: "12 June 2026", data: [expense1, expense2] },
+  { title: "11 June 2026", data: [expense3] },
+]
+```
+
+Each item:
+```
+Groceries      Vegetables     -Rs. 450
+                           Balance: Rs. 49,550  ← gray, right
+```
+
+Running balance recalculated from budget downward for each transaction.
+
+**Footer card:**
+```
+Total Budget:    Rs. 50,000
+Total Spent:     Rs. 12,500
+Remaining:       Rs. 37,500    ← green text
+```
+
+**"Export to Excel" Button** — outlined green button, full width
+
+---
+
+## EXCEL EXPORT (`/utils/exportExcel.js`)
+
+```js
+import * as XLSX from 'xlsx';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+
+export const exportToExcel = async (expenses, budget, month) => {
+  const rows = expenses
+    .filter(e => e.date.startsWith(month))
+    .map(e => ({
+      Date: e.date,
+      Category: e.category,
+      Description: e.description || '-',
+      Amount: `Rs. ${e.amount}`
+    }));
+
+  // Add summary rows
+  const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+  rows.push({}, 
+    { Date: 'Total Budget', Category: `Rs. ${budget}` },
+    { Date: 'Total Spent', Category: `Rs. ${totalSpent}` },
+    { Date: 'Remaining', Category: `Rs. ${budget - totalSpent}` }
+  );
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `${month} Statement`);
+  const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+
+  const uri = FileSystem.documentDirectory + `Statement_${month}.xlsx`;
+  await FileSystem.writeAsStringAsync(uri, wbout, { encoding: FileSystem.EncodingType.Base64 });
+  await Sharing.shareAsync(uri);
+};
+```
+
+---
+
+## SCREEN 4 — REMINDERS (`RemindersScreen.js`)
+
+**Add Reminder Form (collapsible or always visible at top):**
+- TextInput: Title
+- Date picker (same as Add Expense)
+- Repeat Picker: None / Monthly / Yearly
+- "Add Reminder" green button
+
+**Reminders List (FlatList):**
+
+Each `ReminderCard`:
+```
+🔔  Car Oil Change
+    15 July 2026  •  Yearly
+```
+
+Left border color by status:
+- Overdue (past today): `#DC2626` red
+- Within 7 days: `#F59E0B` amber  
+- Future: `#16A34A` green
+
+Delete: trash icon button, Alert.alert confirm.
+
+---
+
+## CALCULATIONS RULES
+
+Always compute fresh, never cache:
+
+```js
+const currentMonth = new Date().toISOString().slice(0, 7); // "2026-06"
+const monthExpenses = data.expenses.filter(e => e.date.startsWith(currentMonth));
+const totalSpent = monthExpenses.reduce((s, e) => s + e.amount, 0);
+const remaining = data.budget - totalSpent;
+const savingsProgress = data.savingsGoal > 0 ? (remaining / data.savingsGoal) * 100 : 0;
+```
+
+---
+
+## UX RULES
+
+- All monetary values displayed as `Rs. X,XXX` with comma formatting:
+  ```js
+  const formatRs = (n) => `Rs. ${n.toLocaleString('en-PK')}`;
+  ```
+- Delete always requires `Alert.alert("Delete?", "...", [{text:"Cancel"}, {text:"Delete", style:"destructive"}])`
+- Every screen uses `SafeAreaView`
+- All screens have `backgroundColor: '#F8FAFC'`
+- No hardcoded heights that break on different phones — use `flex` layout
+- `useFocusEffect` on Dashboard to refresh after adding expenses
+
+---
+
+## FINAL NOTES FOR REPLIT
+
+- Run with: `npx expo start --tunnel` (Replit needs tunnel mode)
+- The Replit preview won't show React Native — user must scan QR with **Expo Go app** on phone
+- Add a clear `README.md`:
+  ```
+  1. Run: npx expo start --tunnel
+  2. Scan QR code with Expo Go app
+  3. App opens on your phone
+  ```
+- Make sure `app.json` has:
+  ```json
+  {
+    "expo": {
+      "name": "Household Budget",
+      "slug": "household-budget",
+      "version": "1.0.0",
+      "android": {
+        "package": "com.householdbudget.app",
+        "versionCode": 1
+      }
+    }
+  }
+  ```
+
+---
+
+## APK BUILD (Download & Install on Android)
+
+Replit cannot build APKs locally. Use **EAS Build** (Expo's free cloud build service) to generate a downloadable `.apk` file.
+
+### Step-by-step after Replit generates the code:
+
+**Step 1 — Create free Expo account**
+Go to: https://expo.dev/signup
+
+**Step 2 — Install EAS CLI**
+In Replit Shell:
+```bash
+npm install -g eas-cli
+eas login
+```
+
+**Step 3 — Configure EAS**
+```bash
+eas build:configure
+```
+This creates `eas.json`. Make sure it contains:
+```json
+{
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
+```
+
+**Step 4 — Build the APK (free, cloud-based)**
+```bash
+eas build -p android --profile preview
+```
+- No Android Studio needed
+- No local Java/Gradle needed
+- Build runs on Expo's servers (~10–15 minutes)
+- You get a download link when done
+
+**Step 5 — Download & Install**
+- Open the link on your Android phone
+- Download the `.apk` file
+- Go to Settings → Install Unknown Apps → Allow
+- Install and open
+
+### Add this as a script in `package.json`:
+```json
+"scripts": {
+  "start": "expo start --tunnel",
+  "build:apk": "eas build -p android --profile preview"
+}
+```
+
+### Add to `README.md`:
+```
+## To test on phone (instant):
+1. npm run start
+2. Scan QR with Expo Go app
+
+## To build APK (installable):
+1. npm install -g eas-cli
+2. eas login  (create account at expo.dev)
+3. npm run build:apk
+4. Download APK from the link printed in terminal
+5. Install on Android phone
+```

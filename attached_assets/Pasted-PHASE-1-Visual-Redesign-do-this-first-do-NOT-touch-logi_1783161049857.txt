@@ -1,0 +1,59 @@
+PHASE 1: Visual Redesign (do this first, do NOT touch logic/state/data handling)
+
+I want you to restyle the visual design of this app without changing any business logic, state management, data flow, or existing functionality. This is a CSS/styling/theme pass only. Do not refactor components, rename props, or change how data is calculated or stored.
+
+Design direction: "premium minimal dark fintech"
+
+Color tokens — replace all existing colors with this exact palette. Create a single theme/constants file (e.g. theme.ts or colors.ts) if one doesn't exist, and reference these tokens everywhere instead of hardcoding hex values in components:
+
+
+background: #0A0A0A (primary screen background)
+surface: #16161A (cards, elevated containers)
+textPrimary: #F5F5F0 (headlines, balance figures)
+textSecondary: #C9A876 (labels, category names — warm tan)
+textTertiary: #A6A6D0 (dates, metadata — muted lavender)
+accentPositive: #0F6E4F (under budget, income, positive states)
+accentNegative: #D96C4C (over budget, warnings — muted, not alarm-red)
+border: rgba(255,255,255,0.08) (hairline borders instead of shadows)
+
+
+Typography rules:
+
+
+Use one font family throughout (Inter or Manrope if not already installed — check package.json first and install if missing).
+Enable tabular/monospaced figures for ALL currency and number displays so digits align.
+Create a type scale with only these sizes: 12, 14, 16, 20, 28, 40px. Do not use arbitrary sizes outside this scale.
+The main balance/total figure on the home screen should be the largest text in the entire app (40px, bold/extrabold weight).
+Body and label text should be regular/medium weight only — reserve bold for numbers and headlines.
+
+
+Layout rules:
+
+
+Replace any drop shadows on cards with a 1px hairline border using the border token above.
+Increase whitespace: minimum 16px padding inside cards, minimum 24px between major sections.
+The mascot/avatar component should remain the single "playful" visual element — do not restyle it to match this muted palette, keep its existing personality, but ensure the container/background around it uses the new theme so it doesn't clash.
+
+
+Before you start: list every screen and component file you plan to touch, so I can confirm scope before you make changes.
+
+When done: show me a before/after screenshot or description of at least the home/balance screen and the transaction list screen.
+
+
+PHASE 2: Edge Case Testing (only start after Phase 1 is confirmed working)
+
+Now audit the app for edge cases, separate from the design work above. Do not make design changes during this phase — bug fixes only.
+
+Check and report on each of these, and fix any that fail:
+
+
+Empty states — What renders when there are zero transactions, zero budget categories, or a brand-new user with no data yet? Every screen should have a designed empty state, not a blank or broken layout.
+Extreme numbers — Test with a balance of $0, a negative balance, a very large number (e.g. $1,000,000+), and a number with many decimal places. Confirm text doesn't overflow, truncate awkwardly, or break layout on smaller screen widths.
+Budget threshold edges — Test spending at exactly 0%, exactly 100%, and over 100% of a budget category. Confirm the mascot's mood states and any progress bars/colors trigger correctly at these exact boundaries, not just in the middle ranges.
+Input validation — Try entering non-numeric characters, negative numbers, empty fields, and extremely long text into any input (transaction name, amount, category name). Confirm the app doesn't crash and gives reasonable feedback.
+Rapid interaction — Rapidly tapping "add transaction" or any submit button multiple times fast — confirm it doesn't create duplicate entries.
+Device/orientation — Confirm layouts hold up on the smallest supported screen width, and after device rotation if the app supports it.
+Data persistence — Force-close the app after adding data, then reopen — confirm nothing is lost or duplicated.
+
+
+When done: give me a checklist of each item above with pass/fail and a one-line description of any fix made.
